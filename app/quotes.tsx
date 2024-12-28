@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   Animated,
 } from "react-native";
+import { useRouter } from "expo-router";
 import { getQuote } from "../utils/api";
 import { playMusic, setVolume } from "../utils/music";
 import { Ionicons } from "@expo/vector-icons"; // Install with `npx expo install @expo/vector-icons`
@@ -16,6 +17,7 @@ export default function QuotesScreen() {
   const [loading, setLoading] = useState(true);
   const [musicMuted, setMusicMuted] = useState(false); // State for mute toggle
   const fadeAnim = useRef(new Animated.Value(0)).current;
+  const router = useRouter();
 
   const fadeIn = () => {
     return new Promise((resolve) => {
@@ -85,15 +87,6 @@ export default function QuotesScreen() {
 
   return (
     <View style={styles.container}>
-      {/* Settings Button */}
-      <TouchableOpacity style={styles.settingsButton} onPress={toggleMusic}>
-        <Ionicons
-          name={musicMuted ? "volume-mute" : "volume-high"}
-          size={28}
-          color="#fff"
-        />
-      </TouchableOpacity>
-
       <TouchableOpacity
         style={styles.quoteContainer}
         onPress={fetchNewQuote}
