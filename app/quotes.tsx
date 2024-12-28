@@ -1,52 +1,110 @@
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import {
   View,
   Text,
-  Button,
   StyleSheet,
-  ActivityIndicator,
+  TouchableOpacity,
+  Animated,
 } from "react-native";
+import { getQuote } from "../utils/api";
+import { playMusic, setVolume } from "../utils/music";
+import { Ionicons } from "@expo/vector-icons"; // Install with `npx expo install @expo/vector-icons`
 
 export default function QuotesScreen() {
-  const [quote, setQuote] = useState("");
-  const [author, setAuthor] = useState("");
-  const [loading, setLoading] = useState(false);
+  // This is your quotes.tsx component
+  const [quote, setQuote] = useState({ text: "", author: "" });
+  const [loading, setLoading] = useState(true);
+  const [musicMuted, setMusicMuted] = useState(false); // State for mute toggle
+  const fadeAnim = useRef(new Animated.Value(0)).current;
 
-  const fetchQuote = async () => {
+  const fadeIn = () => {
+    return new Promise((resolve) => {
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 2000,
+        useNativeDriver: true,
+      }).start(resolve);
+    });
+  };
+
+  const fadeOut = () => {
+    return new Promise((resolve) => {
+      Animated.timing(fadeAnim, {
+        toValue: 0,
+        duration: 2000,
+        useNativeDriver: true,
+      }).start(resolve);
+    });
+  };
+
+  const fetchNewQuote = async () => {
+    if (loading) return;
+
+    setLoading(true);
+
     try {
-      setLoading(true);
-      const response = await fetch(
-        "https://api.forismatic.com/api/1.0/?method=getQuote&format=json&lang=en"
-      );
-      const data = await response.json();
+      // Fade out current quote
+      await fadeOut();
 
-      setQuote(data.quoteText || "Quote not available.");
-      setAuthor(data.quoteAuthor || "Unknown");
+      // Fetch new quote while faded out
+      const newQuote = await getQuote();
+      setQuote(newQuote);
+
+      // Fade in new quote
+      await fadeIn();
     } catch (error) {
-      console.error("Error fetching quote:", error);
-      setQuote("Unable to fetch quote. Please try again.");
-      setAuthor("");
+      console.error("Error:", error);
     } finally {
       setLoading(false);
     }
   };
 
-  // Fetch a quote when the screen loads
   useEffect(() => {
-    fetchQuote();
+    // Play music on mount
+    playMusic();
+
+    // Initial quote load
+    getQuote().then((newQuote) => {
+      setQuote(newQuote);
+      fadeIn().then(() => setLoading(false));
+    });
+
+    return () => {
+      setVolume(0); // Mute on unmount if needed
+    };
   }, []);
+
+  const toggleMusic = () => {
+    if (musicMuted) {
+      setVolume(1); // Unmute
+    } else {
+      setVolume(0); // Mute
+    }
+    setMusicMuted(!musicMuted);
+  };
 
   return (
     <View style={styles.container}>
-      {loading ? (
-        <ActivityIndicator size="large" color="#0a7ea4" />
-      ) : (
-        <>
-          <Text style={styles.quote}>{quote}</Text>
-          <Text style={styles.author}>- {author}</Text>
-          <Button title="New Quote" onPress={fetchQuote} />
-        </>
-      )}
+      {/* Settings Button */}
+      <TouchableOpacity style={styles.settingsButton} onPress={toggleMusic}>
+        <Ionicons
+          name={musicMuted ? "volume-mute" : "volume-high"}
+          size={28}
+          color="#fff"
+        />
+      </TouchableOpacity>
+
+      <TouchableOpacity
+        style={styles.quoteContainer}
+        onPress={fetchNewQuote}
+        activeOpacity={0.7}
+        disabled={loading}
+      >
+        <Animated.View style={{ opacity: fadeAnim }}>
+          <Text style={styles.quoteText}>"{quote.text}"</Text>
+          <Text style={styles.authorText}>- {quote.author}</Text>
+        </Animated.View>
+      </TouchableOpacity>
     </View>
   );
 }
@@ -56,20 +114,32 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    paddingHorizontal: 16,
-    backgroundColor: "#f5f5f5",
+    backgroundColor: "#000",
+    padding: 20,
   },
-  quote: {
+  settingsButton: {
+    position: "absolute",
+    top: 40,
+    right: 20,
+  },
+  quoteContainer: {
+    padding: 20,
+    width: "100%",
+    minHeight: 200,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  quoteText: {
+    color: "#fff",
     fontSize: 24,
-    fontStyle: "italic",
     textAlign: "center",
     marginBottom: 20,
-    color: "#333",
+    lineHeight: 36,
   },
-  author: {
+  authorText: {
+    color: "#888",
     fontSize: 18,
     textAlign: "center",
-    marginBottom: 40,
-    color: "#555",
+    fontStyle: "italic",
   },
 });

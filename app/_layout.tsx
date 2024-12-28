@@ -1,5 +1,4 @@
-import { useEffect } from "react";
-import { Stack, useRouter } from "expo-router";
+import { Stack } from "expo-router";
 import {
   ThemeProvider,
   DarkTheme,
@@ -8,20 +7,19 @@ import {
 import { useColorScheme } from "@/hooks/useColorScheme";
 
 export default function RootLayout() {
-  const router = useRouter();
   const colorScheme = useColorScheme();
-
-  useEffect(() => {
-    router.replace("/splash"); // Explicitly redirect to splash
-  }, []);
 
   return (
     <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
-      <Stack>
-        <Stack.Screen name="splash" options={{ headerShown: false }} />
-        <Stack.Screen name="quotes" options={{ headerShown: false }} />{" "}
-        {/* Add Quotes Screen */}
-        <Stack.Screen name="+not-found" />
+      <Stack screenOptions={{ headerShown: false }}>
+        <Stack.Screen
+          name="index"
+          options={{
+            animation: "none",
+            presentation: "containedModal",
+          }}
+        />
+        <Stack.Screen name="quotes" />
       </Stack>
     </ThemeProvider>
   );

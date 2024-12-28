@@ -2,16 +2,16 @@ import React, { useEffect, useRef } from "react";
 import {
   View,
   Text,
-  Image,
   Animated,
   TouchableWithoutFeedback,
   StyleSheet,
 } from "react-native";
 import { useRouter } from "expo-router";
 
-export default function SplashScreen() {
+export default function Index() {
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const router = useRouter();
+  const hasNavigated = useRef(false);
 
   useEffect(() => {
     // Fade-in animation
@@ -19,16 +19,42 @@ export default function SplashScreen() {
       toValue: 1,
       duration: 2000,
       useNativeDriver: true,
-    }).start(() => {
-      // Navigate to the home page after 3 seconds
-      setTimeout(() => {
-        router.replace("/(tabs)");
-      }, 3000);
-    });
-  }, [fadeAnim, router]);
+    }).start();
+
+    // Navigate to quotes after animation + delay
+    const timer = setTimeout(() => {
+      if (!hasNavigated.current) {
+        // Fade out before navigation
+        Animated.timing(fadeAnim, {
+          toValue: 0,
+          duration: 2000, // Same duration as fade in
+          useNativeDriver: true,
+        }).start(() => {
+          hasNavigated.current = true;
+          router.replace("/quotes");
+        });
+      }
+    }, 3000); // Reduced to account for fade-out time
+
+    return () => clearTimeout(timer);
+  }, []);
+
+  const handlePress = () => {
+    if (!hasNavigated.current) {
+      hasNavigated.current = true;
+      // Fade out on press
+      Animated.timing(fadeAnim, {
+        toValue: 0,
+        duration: 2000,
+        useNativeDriver: true,
+      }).start(() => {
+        router.replace("/quotes");
+      });
+    }
+  };
 
   return (
-    <TouchableWithoutFeedback onPress={() => router.replace("/(tabs)")}>
+    <TouchableWithoutFeedback onPress={handlePress}>
       <View style={styles.container}>
         <Animated.Image
           source={require("../assets/images/sparrowghost-logo.png")}
@@ -60,4 +86,3 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
   },
 });
-console.log("Splash screen is loading");
